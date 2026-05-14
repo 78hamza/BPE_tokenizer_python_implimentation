@@ -1,11 +1,10 @@
 from typing import *
 from collections import defaultdict, Counter
-import collections
 import re
 
 
 class BPE:
-    def __ini__(self, corpus: dict) -> None:
+    def __init__(self, corpus: dict) -> None:
         self.corpus: list = corpus
         self.vocab: dict = Counter()
 
@@ -39,7 +38,7 @@ class BPE:
         new_vocab = {}
         for word, freq in self.vocab.items():
             # replace all occurences of the pair
-            new_word = re.sub(r'\b{}\b'.format(bigram), remplacment, word)
+            new_word = re.sub(r'\b{}\b'.format(bigram), replacement, word)
             new_vocab[new_word] = freq
         return new_vocab
 
@@ -48,24 +47,24 @@ class BPE:
     train_bpe: Iteratively perfoms merges, printing each step. we stop after a fixed number of merges (num_merges).
     The filan vocabulary maps merged tokens (characters merged without spaces) to frequencies.
     """
-    def train_bpe(self, num_merges: int) -> list:
+    def train_bpe(self, num_merges: int) -> tuple:
         for word, freq in self.corpus.items():
             spaced = ' '.join(list(word)) + ' _'
             self.vocab[spaced] = freq
 
         merges = []
         for i in range(num_merges):
-            pairs = count_pairs(self.vocab)
+            pairs = self.count_pairs()
             if not pairs:
                 break
             # find most frequent pair
             best_pair, best_freq = max(pairs.items(), key=lambda x: x[1])
             merges.append(best_pair)
             # merge in vocab
-            self.vocab = merge_pair(self.vocab, best_pair)
+            self.vocab = self.merge_pair(best_pair)
             print(f"Merge {i+1}: {best_pair} (count={best_freq})")
             for w, f in self.vocab.items():
-               print(f" {w}: {f}")
+                print(f" {w}: {f}")
             print()
         # build the final merged vocab
         final_vocab = {}
@@ -80,7 +79,7 @@ class BPE:
     encode_pbe: To tokenize a new wordk we split it inot characters plus "_", then applythe merge rules in order (finding
     and merging adjacent tokens). Any leftover symbol not in vocab would become [UNK] (we cold add that logic)
     """
-    def encode_pbe(self,word: str, merges: list) -> list:
+    def encode_pbe(self, word: str, merges: list) -> list:
         """
         encode a single word (string) using learned merge rules.
         returns list of tokens , Unkonw (unmerged) chars become <UNK>
